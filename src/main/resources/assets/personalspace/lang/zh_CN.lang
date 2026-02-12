@@ -13,6 +13,7 @@ gui.personalWorld.voidWorld=虚空世界
 gui.personalWorld.biome=生物群系名称
 gui.personalWorld.presets=预设
 gui.personalWorld.layers=层
+gui.personalWorld.seed=世界种子
 
 gui.personalWorld.skyColor=天空颜色
 gui.personalWorld.skyColor.red=红: 
@@ -31,6 +32,9 @@ gui.personalWorld.notAllowed=服务器配置不允许
 gui.personalWorld.skyType.VANILLA=原版天空
 gui.personalWorld.skyType.BARNADA_C=巴纳德C天空
 gui.personalWorld.skyType.GARDEN_OF_GLASS=水晶花园天空
+gui.personalWorld.generationType.FLAT=平坦世界
+gui.personalWorld.generationType.VANILLA=原版世界
+gui.personalWorld.generationType.RWG=RWG世界
 
 commands.pspace.usage=/pspace (give-portal <玩家> <维度> [X] [Y] [Z])|(tpx <玩家> <维度> [X Y Z])|(ls)|(where <玩家>)|(allow-worldgen-change <维度>)
 commands.pspace.badDimension=指定维度不存在

@@ -60,9 +60,11 @@ public class DimensionConfig {
             if (isLoaded == null) {
                 try {
                     Class<?> skyClass;
-                    if (skyProvider != null) skyClass = Class.forName(skyProvider);
+                    if (skyProvider != null)
+                        skyClass = Class.forName(skyProvider);
                     Class<?> cloudClass;
-                    if (cloudProvider != null) cloudClass = Class.forName(cloudProvider);
+                    if (cloudProvider != null)
+                        cloudClass = Class.forName(cloudProvider);
                     isLoaded = Boolean.TRUE;
                 } catch (ClassNotFoundException e) {
                     isLoaded = Boolean.FALSE;
@@ -115,6 +117,16 @@ public class DimensionConfig {
         }
     }
 
+    public enum GenerationType {
+        FLAT,
+        VANILLA,
+        RWG;
+
+        public static GenerationType fromOrdinal(int ord) {
+            return (ord < 0 || ord >= values().length) ? FLAT : values()[ord];
+        }
+    }
+
     private String saveDirOverride = "";
     private int skyColor = 0xc0d8ff;
     private float starBrightness = 1.0F;
@@ -122,6 +134,7 @@ public class DimensionConfig {
     private DaylightCycle daylightCycle = DaylightCycle.CYCLE;
     private boolean cloudsEnabled = true;
     private SkyType skyType = SkyType.VANILLA;
+    private GenerationType generationType = GenerationType.FLAT;
     private boolean generatingVegetation = false;
     private boolean generatingTrees = false;
     private boolean allowGenerationChanges = false;
@@ -136,7 +149,8 @@ public class DimensionConfig {
     public static final Pattern PRESET_VALIDATION_PATTERN = Pattern
             .compile("^([^:\\*;]+:[^:\\*;]+(\\*\\d+)?;)*([^:\\*;]+:[^:\\*;]+(\\*\\d+)?)?$");
 
-    public DimensionConfig() {}
+    public DimensionConfig() {
+    }
 
     public void writeToPacket(MCDataOutput pkt) {
         pkt.writeString(saveDirOverride);
@@ -149,12 +163,15 @@ public class DimensionConfig {
         pkt.writeBoolean(weatherEnabled);
         pkt.writeBoolean(generatingVegetation);
         pkt.writeBoolean(generatingTrees);
+        pkt.writeBoolean(generatingTrees);
         pkt.writeBoolean(allowGenerationChanges);
+        pkt.writeVarInt(generationType.ordinal());
         pkt.writeVarInt(layers.size());
         for (FlatLayerInfo info : layers) {
             pkt.writeVarInt(Block.getIdFromBlock(info.func_151536_b()));
             pkt.writeVarInt(info.getLayerCount());
         }
+        pkt.writeString(worldSeed);
     }
 
     public void readFromPacket(MCDataInput pkt) {
@@ -169,7 +186,9 @@ public class DimensionConfig {
         this.setWeatherEnabled(pkt.readBoolean());
         this.setGeneratingVegetation(pkt.readBoolean());
         this.setGeneratingTrees(pkt.readBoolean());
+        this.setGeneratingTrees(pkt.readBoolean());
         this.setAllowGenerationChanges(pkt.readBoolean());
+        this.setGenerationType(GenerationType.fromOrdinal(pkt.readVarInt()));
         int layerCount = pkt.readVarInt();
         ArrayList<FlatLayerInfo> layers = new ArrayList<>(layerCount);
         int y = 0;
@@ -182,6 +201,7 @@ public class DimensionConfig {
             y += count;
         }
         this.layers = layers;
+        this.setWorldSeed(pkt.readString());
     }
 
     /**
@@ -266,6 +286,12 @@ public class DimensionConfig {
         } else {
             setAllowGenerationChanges(cur.getBoolean());
         }
+        cur = cfg.get(WORLDGEN, "generationType", generationType.ordinal());
+        if (write) {
+            cur.set(generationType.ordinal());
+        } else {
+            setGenerationType(GenerationType.fromOrdinal(cur.getInt()));
+        }
         cur = cfg.get(WORLDGEN, "layers", getLayersAsString());
         if (write) {
             cur.set(getLayersAsString());
@@ -277,6 +303,12 @@ public class DimensionConfig {
             cur.set(dimId);
         } else {
             dimId = cur.getInt();
+        }
+        cur = cfg.get(WORLDGEN, "worldSeed", worldSeed);
+        if (write) {
+            cur.set(worldSeed);
+        } else {
+            setWorldSeed(cur.getString());
         }
         if (write) {
             cfg.save();
@@ -310,7 +342,9 @@ public class DimensionConfig {
             this.setBiomeId(source.getBiomeId());
             this.setGeneratingTrees(source.isGeneratingTrees());
             this.setGeneratingVegetation(source.isGeneratingVegetation());
+            this.setGenerationType(source.getGenerationType());
             this.layers = source.layers;
+            this.setWorldSeed(source.getWorldSeed());
             this.needsSaving = true;
         }
         boolean modified = this.needsSaving;
@@ -513,6 +547,17 @@ public class DimensionConfig {
         }
     }
 
+    public GenerationType getGenerationType() {
+        return generationType;
+    }
+
+    public void setGenerationType(GenerationType type) {
+        if (this.generationType != type) {
+            this.needsSaving = true;
+            this.generationType = type;
+        }
+    }
+
     public boolean needsSaving() {
         return needsSaving;
     }
@@ -628,7 +673,8 @@ public class DimensionConfig {
     }
 
     /**
-     * Doesn't check if the layers are valid, make sure to call canUseLayers on user-provided input
+     * Doesn't check if the layers are valid, make sure to call canUseLayers on
+     * user-provided input
      */
     public void setLayers(String preset) {
         this.layers = parseLayers(preset);
@@ -636,7 +682,8 @@ public class DimensionConfig {
 
     /**
      * @param name Original UW save folder name
-     * @return Dimension config generating a UW-compatible world, and the dimension ID of the original world; or null if
+     * @return Dimension config generating a UW-compatible world, and the dimension
+     *         ID of the original world; or null if
      *         it's not a UW world
      */
     public static MutablePair<DimensionConfig, Integer> fromUtilityWorldsWorld(String name) {
@@ -678,5 +725,32 @@ public class DimensionConfig {
             y += info.getLayerCount();
         }
         return MathHelper.clamp_int(y, 0, 255);
+    }
+
+    private String worldSeed = "";
+
+    public String getWorldSeed() {
+        return worldSeed;
+    }
+
+    public void setWorldSeed(String worldSeed) {
+        if (worldSeed == null) {
+            worldSeed = "";
+        }
+        if (!this.worldSeed.equals(worldSeed)) {
+            this.needsSaving = true;
+            this.worldSeed = worldSeed;
+        }
+    }
+
+    public long getSeedValue(int dimId) {
+        if (worldSeed.isEmpty()) {
+            return new java.util.Random(dimId).nextLong();
+        }
+        try {
+            return Long.parseLong(worldSeed);
+        } catch (NumberFormatException e) {
+            return worldSeed.hashCode();
+        }
     }
 }

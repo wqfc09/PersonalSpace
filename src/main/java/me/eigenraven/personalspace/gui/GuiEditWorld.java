@@ -45,10 +45,15 @@ public class GuiEditWorld extends GuiScreen {
     WCycleButton enableDaylightCycle;
     WToggleButton enableClouds;
     WButton skyType;
+    WButton generationTypeBtn;
     WToggleButton generateTrees;
     WToggleButton generateVegetation;
     WButton save;
     WTextField presetEntry;
+    WTextField seedEntry;
+    WLabel biomeLabel;
+    WLabel presetsLabel;
+    WLabel seedLabel;
     List<WButton> presetButtons = new ArrayList<>();
     Widget presetEditor;
     Widget rootWidget = new Widget();
@@ -57,7 +62,6 @@ public class GuiEditWorld extends GuiScreen {
     public GuiEditWorld(PortalTileEntity tile) {
         super();
         this.tile = tile;
-        int targetDimId = 0;
         DimensionConfig currentDimConfig = DimensionConfig
                 .getForDimension(tile.getWorldObj().provider.dimensionId, true);
         if (currentDimConfig != null) {
@@ -81,11 +85,6 @@ public class GuiEditWorld extends GuiScreen {
         if (!this.mc.thePlayer.isEntityAlive() || this.mc.thePlayer.isDead) {
             this.mc.thePlayer.closeScreen();
         }
-    }
-
-    private void addButton(GuiButton btn) {
-        this.buttonList.add(btn);
-        this.ySize += btn.height + 6;
     }
 
     private void addWidget(Widget w) {
@@ -170,7 +169,26 @@ public class GuiEditWorld extends GuiScreen {
                     updateSkyTypeButton();
                 });
         this.rootWidget.addChild(this.skyType);
+        this.rootWidget.addChild(this.skyType);
         updateSkyTypeButton();
+
+        this.generationTypeBtn = new WButton(
+                new Rectangle(0, this.skyBlue.position.y + this.skyBlue.position.height + 6, 128, 20),
+                I18n.format("gui.personalWorld.generationType." + desiredConfig.getGenerationType().name()),
+                true,
+                0xFFFFFF,
+                null,
+                () -> {
+                    int ordinal = desiredConfig.getGenerationType().ordinal();
+                    ordinal = (ordinal + 1) % DimensionConfig.GenerationType.values().length;
+                    desiredConfig.setGenerationType(DimensionConfig.GenerationType.fromOrdinal(ordinal));
+                    this.generationTypeBtn.text = I18n
+                            .format("gui.personalWorld.generationType." + desiredConfig.getGenerationType().name());
+                    this.updateLayout();
+                });
+        addWidget(generationTypeBtn);
+
+        this.ySize = this.generationTypeBtn.position.y + this.generationTypeBtn.position.height + 6;
 
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.starBrightness"), false));
         this.starBrightness = new WSlider(
@@ -186,9 +204,16 @@ public class GuiEditWorld extends GuiScreen {
                 null);
         addWidget(starBrightness);
 
-        this.ySize += 4;
-        addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.biome"), false));
-        this.biome = new WTextField(new Rectangle(0, this.ySize, 142, 18), desiredConfig.getBiomeId());
+        this.ySize += 6;
+
+        // Labels
+        this.biomeLabel = new WLabel(0, this.ySize, I18n.format("gui.personalWorld.biome"), false);
+        addWidget(this.biomeLabel);
+        this.seedLabel = new WLabel(0, this.ySize, I18n.format("gui.personalWorld.seed"), false);
+        addWidget(this.seedLabel);
+
+        // Fields
+        this.biome = new WTextField(new Rectangle(0, this.ySize + 10, 142, 18), desiredConfig.getBiomeId());
         this.biomeEditButton = new WButton(new Rectangle(144, 0, 18, 18), "", false, 0, Icons.PENCIL, () -> {
             this.biomeCycle = (this.biomeEditButton.lastButton == 0) ? (this.biomeCycle + 1)
                     : (this.biomeCycle + PersonalSpaceMod.clientAllowedBiomes.size() - 1);
@@ -197,7 +222,12 @@ public class GuiEditWorld extends GuiScreen {
         });
         this.biome.addChild(biomeEditButton);
         addWidget(this.biome);
+
+        this.seedEntry = new WTextField(new Rectangle(0, this.ySize + 10, 160, 20), desiredConfig.getWorldSeed());
+        addWidget(seedEntry);
+
         this.ySize += 4;
+
         this.generateTrees = new WToggleButton(
                 new Rectangle(0, this.ySize, 18, 18),
                 "",
@@ -235,6 +265,8 @@ public class GuiEditWorld extends GuiScreen {
         this.enableClouds.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.clouds"), false));
         rootWidget.addChild(this.enableClouds);
 
+        // SeedEntry was here, moved up.
+
         voidPresetName = I18n.format("gui.personalWorld.voidWorld");
 
         this.ySize += 2;
@@ -245,7 +277,8 @@ public class GuiEditWorld extends GuiScreen {
         addWidget(presetEntry);
         this.ySize += 2;
 
-        addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.presets"), false));
+        this.presetsLabel = new WLabel(0, this.ySize, I18n.format("gui.personalWorld.presets"), false);
+        addWidget(this.presetsLabel);
 
         int px = 8, pi = 1;
         for (String preset : Config.defaultPresets) {
@@ -291,7 +324,8 @@ public class GuiEditWorld extends GuiScreen {
         this.presetEditor.position = new Rectangle(172, 0, 1, 1);
         this.rootWidget.addChild(this.presetEditor);
 
-        regeneratePresetEditor();
+        this.updateLayout();
+        this.regeneratePresetEditor();
 
         this.xSize = 320 - 16;
         this.ySize = 240 - 16;
@@ -299,15 +333,53 @@ public class GuiEditWorld extends GuiScreen {
         this.guiTop = (this.height - this.ySize) / 2;
     }
 
+    private void updateLayout() {
+        final boolean generationEnabled = desiredConfig.getAllowGenerationChanges();
+        boolean isFlat = desiredConfig.getGenerationType() == DimensionConfig.GenerationType.FLAT;
+
+        // Visibility
+        this.seedEntry.enabled = generationEnabled && !isFlat;
+        this.seedEntry.visible = generationEnabled && !isFlat;
+        this.seedLabel.visible = generationEnabled && !isFlat;
+
+        this.biome.visible = isFlat;
+        this.biomeLabel.visible = isFlat;
+        this.biomeEditButton.visible = isFlat;
+        this.presetEntry.visible = isFlat;
+        this.presetsLabel.visible = isFlat;
+        this.generateTrees.visible = isFlat;
+        this.generateVegetation.visible = isFlat;
+        for (WButton btn : presetButtons)
+            btn.visible = isFlat;
+
+        this.presetEditor.visible = isFlat;
+
+        // Dynamic Positioning
+        if (isFlat) {
+            this.enableWeather.position.setLocation(90, this.generateTrees.position.y);
+            this.enableClouds.position.setLocation(90, this.generateVegetation.position.y);
+        } else {
+            int yBase = this.seedEntry.position.y + this.seedEntry.position.height + 5;
+            this.enableWeather.position.setLocation(0, yBase);
+            this.enableClouds.position.setLocation(90, yBase);
+        }
+    }
+
     private void regeneratePresetEditor() {
         final boolean generationEnabled = desiredConfig.getAllowGenerationChanges();
+        boolean isFlat = desiredConfig.getGenerationType() == DimensionConfig.GenerationType.FLAT;
         this.presetEditor.children.clear();
+
+        if (!isFlat)
+            return;
+
         // Palette
         int curX = 0;
         int curY = 0;
         for (String bl : PersonalSpaceMod.clientAllowedBlocks) {
             String[] blName = bl.split(":");
-            if (blName.length != 2) continue;
+            if (blName.length != 2)
+                continue;
             Block block = GameRegistry.findBlock(blName[0], blName[1]);
             ItemStack is = new ItemStack(block);
             WButton addBtn = new WButton(new Rectangle(curX, curY, 20, 20), "", false, 0, null, () -> {
@@ -433,16 +505,41 @@ public class GuiEditWorld extends GuiScreen {
         for (WButton presetBtn : presetButtons) {
             presetBtn.enabled = generationEnabled;
         }
+        this.generationTypeBtn.enabled = generationEnabled;
         super.drawScreen(mouseX, mouseY, partialTicks);
         this.biome.enabled = generationEnabled;
         this.biomeEditButton.enabled = generationEnabled;
         this.biomeEditButton.buttonIcon = generationEnabled ? Icons.PENCIL : Icons.LOCK;
-        this.presetEntry.enabled = generationEnabled;
+
+        // Seed Placeholder Logic
+        if (!this.seedEntry.isFocused() && this.seedEntry.textField.getText().isEmpty()) {
+            this.seedEntry.textField.setText("Random Seed");
+            this.seedEntry.textField.setTextColor(0x909090);
+        } else if (this.seedEntry.isFocused() && "Random Seed".equals(this.seedEntry.textField.getText())) {
+            this.seedEntry.textField.setText("");
+            this.seedEntry.textField.setTextColor(0xFFFFFF);
+        }
+
+        // Save Seed to desiredConfig
+        String currentSeedText = this.seedEntry.textField.getText();
+        if ("Random Seed".equals(currentSeedText)) {
+            this.desiredConfig.setWorldSeed("");
+        } else {
+            this.desiredConfig.setWorldSeed(currentSeedText);
+        }
+
+        boolean isFlat = desiredConfig.getGenerationType() == DimensionConfig.GenerationType.FLAT;
+
+        // Visibility is now managed in regeneratePresetEditor/updateLayout
+        // The presetEditor's visibility is managed by clearing children in
+        // regeneratePresetEditor
+
+        this.presetEntry.enabled = generationEnabled && isFlat;
         String actualText = this.presetEntry.textField.getText();
         if (voidPresetName.equals(actualText)) {
             actualText = "";
         }
-        if (!generationEnabled) {
+        if (!generationEnabled || !isFlat) {
             this.presetEntry.textField.setTextColor(0x909090);
         } else if (!DimensionConfig.PRESET_VALIDATION_PATTERN.matcher(actualText).matches()) {
             this.presetEntry.textField.setTextColor(0xFF0000);
@@ -455,26 +552,27 @@ public class GuiEditWorld extends GuiScreen {
         } else {
             this.presetEntry.textField.setTextColor(0xA0FFA0);
             this.presetEntry.tooltip = null;
-            this.desiredConfig.setLayers(actualText);
-            this.regeneratePresetEditor();
+            if (!this.desiredConfig.getLayersAsString().equals(actualText)) {
+                this.desiredConfig.setLayers(actualText);
+                this.regeneratePresetEditor();
+            }
         }
         this.desiredConfig.setBiomeId(this.biome.textField.getText());
         if (!generationEnabled) {
             this.biome.textField.setTextColor(0x909090);
         } else if (!this.desiredConfig.getBiomeId()
                 .equalsIgnoreCase(BiomeGenBase.getBiome(this.desiredConfig.getRawBiomeId()).biomeName)) {
-                    this.biome.textField.setTextColor(0xFF0000);
-                    this.biome.tooltip = I18n.format("gui.personalWorld.invalidSyntax");
-                    inputsValid = false;
-                } else
-            if (!DimensionConfig.canUseBiome(this.desiredConfig.getBiomeId(), true)) {
-                this.biome.textField.setTextColor(0xFFFF00);
-                this.biome.tooltip = I18n.format("gui.personalWorld.notAllowed");
-                inputsValid = false;
-            } else {
-                this.biome.textField.setTextColor(0xA0FFA0);
-                this.biome.tooltip = null;
-            }
+            this.biome.textField.setTextColor(0xFF0000);
+            this.biome.tooltip = I18n.format("gui.personalWorld.invalidSyntax");
+            inputsValid = false;
+        } else if (!DimensionConfig.canUseBiome(this.desiredConfig.getBiomeId(), true)) {
+            this.biome.textField.setTextColor(0xFFFF00);
+            this.biome.tooltip = I18n.format("gui.personalWorld.notAllowed");
+            inputsValid = false;
+        } else {
+            this.biome.textField.setTextColor(0xA0FFA0);
+            this.biome.tooltip = null;
+        }
 
         this.save.enabled = inputsValid;
 
@@ -531,7 +629,8 @@ public class GuiEditWorld extends GuiScreen {
     }
 
     @Override
-    protected void actionPerformed(GuiButton button) {}
+    protected void actionPerformed(GuiButton button) {
+    }
 
     @Override
     public boolean doesGuiPauseGame() {

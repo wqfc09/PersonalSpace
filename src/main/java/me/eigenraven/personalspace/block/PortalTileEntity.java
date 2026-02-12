@@ -32,7 +32,8 @@ public class PortalTileEntity extends TileEntity {
     public ForgeDirection targetFacing = DEFAULT_FACING;
     public ForgeDirection facing = DEFAULT_FACING;
 
-    public PortalTileEntity() {}
+    public PortalTileEntity() {
+    }
 
     @Override
     public void readFromNBT(NBTTagCompound tag) {
@@ -186,7 +187,8 @@ public class PortalTileEntity extends TileEntity {
         int otherX = targetPosX, otherY = targetPosY, otherZ = targetPosZ;
         searchloop: for (otherX = targetPosX - 1; otherX <= targetPosX + 1; otherX++) {
             for (otherY = targetPosY - 1; otherY <= targetPosY + 1; otherY++) {
-                if (otherY < 0 || otherY > otherWorld.getHeight()) continue;
+                if (otherY < 0 || otherY > otherWorld.getHeight())
+                    continue;
                 for (otherZ = targetPosZ - 1; otherZ <= targetPosZ + 1; otherZ++) {
                     if (!otherWorld.blockExists(otherX, otherY, otherZ)) {
                         otherWorld.theChunkProviderServer.loadChunk(otherX >> 4, otherZ >> 4);
@@ -326,7 +328,7 @@ public class PortalTileEntity extends TileEntity {
             PersonalSpaceMod.INSTANCE.onDimSettingsChangeServer(targetDimId);
             this.active = true;
             this.targetDimId = targetDimId;
-            this.targetPosY = sanitized.getGroundLevel() + 1;
+            this.targetPosY = 114;
             markDirty();
             createdNewDim = true;
 

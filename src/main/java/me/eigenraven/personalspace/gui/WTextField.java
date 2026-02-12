@@ -12,6 +12,10 @@ public class WTextField extends Widget {
     public GuiTextField textField;
     public String tooltip = null;
 
+    public boolean isFocused() {
+        return textField.isFocused();
+    }
+
     public WTextField(Rectangle position, String text) {
         this.position = position;
         textField = new GuiTextField(Minecraft.getMinecraft().fontRenderer, 0, 0, position.width, position.height);

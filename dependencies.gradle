@@ -7,4 +7,10 @@ dependencies {
     compileOnly("com.github.GTNewHorizons:Galaxy-Space-GTNH:1.1.115-GTNH:dev") {transitive = false}
     compileOnly('thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev') {transitive = false}
     compileOnly('com.github.GTNewHorizons:Baubles-Expanded:2.1.7-GTNH:dev') {transitive = false}
+    compileOnly("com.github.GTNewHorizons:Realistic-World-Gen:alpha-1.5.0:dev") { transitive = false }
+    compileOnly("curse.maven:biomes-o-plenty-220318:2499612")
+
+    // Add to runtime for development
+    implementation("com.github.GTNewHorizons:Realistic-World-Gen:alpha-1.5.0:dev") { transitive = false }
+    implementation("curse.maven:biomes-o-plenty-220318:2499612")
 }

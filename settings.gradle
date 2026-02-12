@@ -8,6 +8,8 @@ pluginManagement {
             mavenContent {
                 includeGroup("com.gtnewhorizons")
                 includeGroupByRegex("com\\.gtnewhorizons\\..+")
+                includeGroup("com.github.GTNewHorizons")
+                includeGroupByRegex("com\\.github\\.GTNewHorizons\\..+")
             }
         }
         gradlePluginPortal()

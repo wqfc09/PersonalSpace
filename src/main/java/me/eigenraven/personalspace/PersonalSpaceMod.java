@@ -122,6 +122,8 @@ public class PersonalSpaceMod {
 
         MinecraftForge.EVENT_BUS.register(this);
         FMLCommonHandler.instance().bus().register(this);
+        MinecraftForge.ORE_GEN_BUS.register(new PersonalSpaceEventHandler());
+        MinecraftForge.TERRAIN_GEN_BUS.register(new PersonalSpaceEventHandler());
     }
 
     @Optional.Method(modid = "appliedenergistics2-core")

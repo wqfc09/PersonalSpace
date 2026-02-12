@@ -70,11 +70,22 @@ public class PersonalWorldProvider extends WorldProvider {
     @Override
     public void registerWorldChunkManager() {
         getConfig();
-        this.worldChunkMgr = new WorldChunkManagerHell(BiomeGenBase.plains, 1.0F);
+        switch (this.config.getGenerationType()) {
+            case RWG:
+                this.worldChunkMgr = new rwg.world.ChunkManagerRealistic(this.worldObj);
+                break;
+            case VANILLA:
+                this.worldChunkMgr = new net.minecraft.world.biome.WorldChunkManager(this.worldObj);
+                break;
+            case FLAT:
+            default:
+                this.worldChunkMgr = new WorldChunkManagerHell(BiomeGenBase.plains, 1.0F);
+                break;
+        }
     }
 
     public IChunkProvider createChunkGenerator() {
-        return new PersonalChunkProvider(this, this.worldObj.getSeed());
+        return new PersonalChunkProvider(this, getConfig().getSeedValue(this.dimensionId));
     }
 
     @SideOnly(Side.CLIENT)
@@ -91,7 +102,7 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public ChunkCoordinates getSpawnPoint() {
-        return new ChunkCoordinates(8, getConfig().getGroundLevel() + 2, 8);
+        return new ChunkCoordinates(8, 114, 8);
     }
 
     @Override
@@ -159,7 +170,8 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public boolean isDaytime() {
-        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE) return super.isDaytime();
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE)
+            return super.isDaytime();
 
         return !this.getConfig().isNightTime();
     }
@@ -174,14 +186,16 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public float getSunBrightness(float par1) {
-        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE) return super.getSunBrightness(par1);
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE)
+            return super.getSunBrightness(par1);
 
         return this.getConfig().isNightTime() ? 0.2F : 1.0F;
     }
 
     @Override
     public float getStarBrightness(float par1) {
-        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE) return super.getStarBrightness(par1);
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE)
+            return super.getStarBrightness(par1);
         return getConfig().getStarBrightness();
     }
 
@@ -242,7 +256,7 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public ChunkCoordinates getEntrancePortalLocation() {
-        return new ChunkCoordinates(8, getAverageGroundLevel(), 8);
+        return new ChunkCoordinates(8, 114, 8);
     }
 
     private void updateSkyType() {
