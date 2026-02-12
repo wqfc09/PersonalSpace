@@ -204,16 +204,19 @@ public class GuiEditWorld extends GuiScreen {
                 null);
         addWidget(starBrightness);
 
-        this.ySize += 6;
+        this.ySize += 4;
 
         // Labels
-        this.biomeLabel = new WLabel(0, this.ySize, I18n.format("gui.personalWorld.biome"), false);
+        int labelY = this.ySize;
+        this.biomeLabel = new WLabel(0, labelY, I18n.format("gui.personalWorld.biome"), false);
         addWidget(this.biomeLabel);
-        this.seedLabel = new WLabel(0, this.ySize, I18n.format("gui.personalWorld.seed"), false);
+        this.ySize = labelY;
+        this.seedLabel = new WLabel(0, labelY, I18n.format("gui.personalWorld.seed"), false);
         addWidget(this.seedLabel);
 
         // Fields
-        this.biome = new WTextField(new Rectangle(0, this.ySize + 10, 142, 18), desiredConfig.getBiomeId());
+        int fieldY = this.ySize;
+        this.biome = new WTextField(new Rectangle(0, fieldY, 142, 18), desiredConfig.getBiomeId());
         this.biomeEditButton = new WButton(new Rectangle(144, 0, 18, 18), "", false, 0, Icons.PENCIL, () -> {
             this.biomeCycle = (this.biomeEditButton.lastButton == 0) ? (this.biomeCycle + 1)
                     : (this.biomeCycle + PersonalSpaceMod.clientAllowedBiomes.size() - 1);
@@ -221,11 +224,12 @@ public class GuiEditWorld extends GuiScreen {
             this.biome.textField.setText(PersonalSpaceMod.clientAllowedBiomes.get(this.biomeCycle));
         });
         this.biome.addChild(biomeEditButton);
-        addWidget(this.biome);
+        this.rootWidget.addChild(this.biome); // Use addChild instead of addWidget to avoid incrementing ySize twice
 
-        this.seedEntry = new WTextField(new Rectangle(0, this.ySize + 10, 160, 20), desiredConfig.getWorldSeed());
-        addWidget(seedEntry);
+        this.seedEntry = new WTextField(new Rectangle(0, fieldY, 160, 20), desiredConfig.getWorldSeed());
+        this.rootWidget.addChild(this.seedEntry);
 
+        this.ySize = fieldY + 20; // Manually set ySize to the height of the fields
         this.ySize += 4;
 
         this.generateTrees = new WToggleButton(
@@ -337,28 +341,42 @@ public class GuiEditWorld extends GuiScreen {
         final boolean generationEnabled = desiredConfig.getAllowGenerationChanges();
         boolean isFlat = desiredConfig.getGenerationType() == DimensionConfig.GenerationType.FLAT;
 
-        // Visibility
+        // Visibility and Interactivity
         this.seedEntry.enabled = generationEnabled && !isFlat;
         this.seedEntry.visible = generationEnabled && !isFlat;
         this.seedLabel.visible = generationEnabled && !isFlat;
 
+        this.biome.enabled = generationEnabled && isFlat;
         this.biome.visible = isFlat;
         this.biomeLabel.visible = isFlat;
         this.biomeEditButton.visible = isFlat;
+        this.biomeEditButton.enabled = generationEnabled && isFlat;
+        this.presetEntry.enabled = generationEnabled && isFlat;
         this.presetEntry.visible = isFlat;
         this.presetsLabel.visible = isFlat;
         this.generateTrees.visible = isFlat;
         this.generateVegetation.visible = isFlat;
-        for (WButton btn : presetButtons)
+        for (WButton btn : presetButtons) {
             btn.visible = isFlat;
+            btn.enabled = generationEnabled && isFlat;
+        }
 
         this.presetEditor.visible = isFlat;
+        this.presetEditor.enabled = generationEnabled && isFlat;
 
         // Dynamic Positioning
+        int fieldY = this.seedLabel.position.y + this.seedLabel.position.height + 1;
+
         if (isFlat) {
+            this.seedEntry.position.setLocation(0, -1000); // Move off-screen
+            this.biome.position.setLocation(0, fieldY); // Ensure on-screen
+
             this.enableWeather.position.setLocation(90, this.generateTrees.position.y);
             this.enableClouds.position.setLocation(90, this.generateVegetation.position.y);
         } else {
+            this.biome.position.setLocation(0, -1000); // Move off-screen
+            this.seedEntry.position.setLocation(0, fieldY); // Ensure on-screen
+
             int yBase = this.seedEntry.position.y + this.seedEntry.position.height + 5;
             this.enableWeather.position.setLocation(0, yBase);
             this.enableClouds.position.setLocation(90, yBase);
