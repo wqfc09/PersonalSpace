@@ -75,14 +75,18 @@ public class PersonalChunkProvider implements IChunkProvider {
     }
 
     private void disableRwgStructures(ChunkGeneratorRealistic gen) {
-        try {
-            replaceField(gen, "caves", new MapGenNoOp());
-            replaceField(gen, "strongholdGenerator", new MapGenStrongholdNoOp());
-            replaceField(gen, "mineshaftGenerator", new MapGenMineshaftNoOp());
-            replaceField(gen, "villageGenerator", new MapGenVillageNoOp());
-            replaceField(gen, "ravines", new MapGenNoOp());
-        } catch (Exception e) {
-            PersonalSpaceMod.LOG.error("Failed to disable RWG structures", e);
+        String[] fields = { "caves", "strongholdGenerator", "mineshaftGenerator", "villageGenerator" };
+        Object[] values = { new MapGenNoOp(), new MapGenStrongholdNoOp(), new MapGenMineshaftNoOp(),
+                new MapGenVillageNoOp() };
+
+        for (int i = 0; i < fields.length; i++) {
+            try {
+                replaceField(gen, fields[i], values[i]);
+            } catch (Exception e) {
+                if (Config.debugLogging) {
+                    PersonalSpaceMod.LOG.warn("Failed to disable RWG structure field: " + fields[i]);
+                }
+            }
         }
     }
 
